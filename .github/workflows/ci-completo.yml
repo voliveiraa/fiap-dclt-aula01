@@ -7,14 +7,15 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
-env:
-  NODE_VERSION: '18'
-
 jobs:
   # Job 1: Lint e Análise de Código
   lint:
-    name: 🔍 Lint e Análise
+    name: 🔍 Lint e Análise (Node ${{ matrix.node-version }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [16, 18, 20]
     
     steps:
       - name: 📥 Checkout
@@ -23,7 +24,7 @@ jobs:
       - name: 🔧 Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version: ${{ matrix.node-version }}
           cache: 'npm'
           cache-dependency-path: app/package-lock.json
       
@@ -38,9 +39,12 @@ jobs:
   
   # Job 2: Testes Unitários
   test:
-    name: 🧪 Testes Unitários
+    name: 🧪 Testes Unitários (Node ${{ matrix.node-version }})
     runs-on: ubuntu-latest
-    # Não tem 'needs', executa em paralelo
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [16, 18, 20]
     
     steps:
       - name: 📥 Checkout
@@ -49,7 +53,7 @@ jobs:
       - name: 🔧 Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version: ${{ matrix.node-version }}
           cache: 'npm'
           cache-dependency-path: app/package-lock.json
       
@@ -64,15 +68,19 @@ jobs:
       - name: 📊 Upload coverage
         uses: actions/upload-artifact@v4
         with:
-          name: coverage-report
+          name: coverage-report-node-${{ matrix.node-version }}
           path: app/coverage/
           retention-days: 7
   
   # Job 3: Build
   build:
-    name: 🏗️ Build
+    name: 🏗️ Build (Node ${{ matrix.node-version }})
     runs-on: ubuntu-latest
     needs: [lint, test]  # Espera AMBOS
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [16, 18, 20]
     
     steps:
       - name: 📥 Checkout
@@ -81,7 +89,7 @@ jobs:
       - name: 🔧 Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version: ${{ matrix.node-version }}
           cache: 'npm'
           cache-dependency-path: app/package-lock.json
       
@@ -100,5 +108,5 @@ jobs:
         run: |
           echo "## 🏗️ Build Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Node Version**: ${{ env.NODE_VERSION }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Node Version**: ${{ matrix.node-version }}" >> $GITHUB_STEP_SUMMARY
           echo "**Status**: ✅ Success" >> $GITHUB_STEP_SUMMARY
